@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#112622">
+<meta name="format-detection" content="telephone=no">
+<title>Спроси ССт НАБ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=Comfortaa:wght@400;500;600;700&family=Great+Vibes&display=swap">
+<link rel="preload" as="image" href="assets/brand/logo-nab.png">
+<link rel="preload" as="image" href="assets/brand/logo-label.png">
+<link rel="stylesheet" href="styles.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<!-- ============ Интро: логотип собирается ============ -->
+<div class="intro" id="intro" aria-hidden="true">
+  <div class="intro__grid"></div>
+  <div class="intro__center">
+    <div class="logo logo--intro">
+      <i class="logo__nab"></i>
+      <span class="logo__halo"><b class="logo__label"></b></span>
+    </div>
+    <div class="intro__sub">Студенческий совет <span class="scr">НАБ</span></div>
+  </div>
+  <div class="intro__bottom">
+    <span>Спроси ССт НАБ</span>
+    <span class="intro__count"><span id="introCount">0</span>%</span>
+  </div>
+  <div class="intro__bar"><i id="introBar"></i></div>
+</div>
+
+<!-- ============ Шторка перехода между экранами ============ -->
+<div class="curtain" id="curtain" aria-hidden="true">
+  <i class="ast ast--spin"></i>
+</div>
+
+<!-- ============ Верх ============ -->
+<div class="progress" aria-hidden="true"><i id="progress"></i></div>
+<header class="top" id="top">
+  <button class="top__logo" type="button" id="topLogo" aria-label="На главную">
+    <span class="logo logo--mini"><i class="logo__nab"></i><span class="logo__halo"><b class="logo__label"></b></span></span>
+  </button>
+  <span class="top__title" id="topTitle"></span>
+  <span class="top__date" id="topDate"></span>
+</header>
+
+<main id="view" class="view"></main>
+
+<!-- ============ Нижняя панель как у F&U ============ -->
+<nav class="dock" id="dock">
+  <button class="dock__burger" type="button" id="burger" aria-label="Меню">
+    <i></i><i></i><i></i>
+  </button>
+  <button class="dock__pill" type="button" id="pill" aria-label="Спроси ССт НАБ — главная">
+    <span class="dock__big">С</span>
+    <span class="dock__lines"><span>ПРОСИ</span><span>Ст НАБ</span></span>
+  </button>
+  <button class="dock__nab" type="button" id="dockNab" aria-label="Больше, чем семья">
+    <span class="logo logo--dock"><i class="logo__nab"></i></span>
+  </button>
+</nav>
+
+<!-- ============ Полноэкранное меню ============ -->
+<div class="menu" id="menu" aria-hidden="true">
+  <div class="menu__grid" aria-hidden="true"></div>
+  <div class="menu__head">
+    <span class="menu__kicker">Меню</span>
+    <button class="menu__close" type="button" id="menuClose" aria-label="Закрыть меню">×</button>
+  </div>
+  <ol class="menu__list" id="menuList"></ol>
+  <div class="menu__foot">
+    <span class="scr">всё, что нужно студенту НАБ</span>
+    <span class="logo logo--menu"><i class="logo__nab"></i><span class="logo__halo"><b class="logo__label"></b></span></span>
+  </div>
+</div>
+
+<!-- ============ Онбординг-подсказки ============ -->
+<div class="tour" id="tour" hidden>
+  <div class="tour__hole" id="tourHole"></div>
+  <button class="tour__skip" type="button" id="tourSkip">Пропустить</button>
+  <div class="tour__bubble" id="tourBubble">
+    <p class="tour__text" id="tourText"></p>
+    <div class="tour__row">
+      <span class="tour__dots" id="tourDots"></span>
+      <button class="tour__next" type="button" id="tourNext">Дальше</button>
+    </div>
+    <i class="tour__tail"></i>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
