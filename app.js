@@ -1,9 +1,9 @@
 /* =========================================================================
-   «Спроси ССт НАБ» — Telegram Mini App Студсовета НАБ
+   «Спроси ССт НАБ» — Telegram Mini App, v2
    ─ Навигация: собственный стек экранов (history не используется для
      переходов — так «назад» работает внутри Telegram всегда).
    ─ Анимации: только transform / opacity / clip-path, всё на rAF.
-   ─ API бота: /api/report, /api/doc, /api/faq (см. репозиторий nab-bot).
+   ─ API тот же, что в v1: /api/report, /api/doc, /api/faq.
    ========================================================================= */
 (() => {
   'use strict';
@@ -69,11 +69,14 @@
   }
 
   async function api(path, body, isForm = false) {
-    const res = await fetch(`${API}/api${path}`, {
-      method: 'POST',
-      headers: isForm ? undefined : { 'Content-Type': 'application/json' },
-      body: isForm ? body : JSON.stringify(body),
-    });
+    let res;
+    try {
+      const headers = { 'X-Init-Data': initData };
+      if (!isForm) headers['Content-Type'] = 'application/json';
+      res = await fetch(`${API}/api${path}`, { method: 'POST', headers, body: isForm ? body : JSON.stringify(body || {}) });
+    } catch (e) {
+      throw new Error('Нет связи с сервером. Проверь интернет и попробуй ещё раз.');
+    }
     let data = {};
     try { data = await res.json(); } catch (e) {}
     if (!res.ok || !data.ok) {
@@ -181,13 +184,16 @@
   };
 
   const MENU = [
-    ['home', 'Главная'], ['npb', 'НПБ'], ['faq', 'FAQ'], ['form:question', 'Вопросы'],
-    ['form:initiative', 'Инициатива'], ['form:repair', 'Поломки'], ['form:panic', 'Тревожная кнопка', 'is-sos'],
-    ['map', 'Карта корпуса'], ['groups', 'Важные группы'], ['contacts', 'Контакты'], ['family', 'Больше, чем семья'],
+    ['home', 'Главная'], ['search', 'Поиск'], ['my', 'Мои обращения'], ['events', 'Анонсы'], ['npb', 'НПБ'], ['faq', 'FAQ'],
+    ['form:question', 'Вопросы'], ['form:initiative', 'Инициатива'], ['form:repair', 'Поломки'],
+    ['form:panic', 'Тревожная кнопка', 'is-sos'], ['map', 'Карта корпуса'], ['polls', 'Опросы'],
+    ['groups', 'Важные группы'], ['contacts', 'Контакты'], ['family', 'Больше, чем семья'],
   ];
 
   const TITLES = { npb: 'Нормативно-правовая база', faq: 'FAQ', doc: 'Документ', groups: 'Важные группы',
-    contacts: 'Наши контакты', ok: 'Готово', map: 'Карта корпуса' };
+    contacts: 'Наши контакты', ok: 'Готово', map: 'Карта корпуса', search: 'Поиск', my: 'Мои обращения',
+    events: 'Анонсы', polls: 'Опросы', news: 'Новости', admin: 'Пульт' };
+  TITLES.my = 'Обращения';
 
   const pad2 = (n) => String(n).padStart(2, '0');
   const pad3 = (n) => String(n).padStart(3, '0');
@@ -204,7 +210,7 @@
       if (!m || !m.docs) return;
       m.docs.forEach((d) => { DOCS[d.id] = d; });
       const n = current().name;
-      if (n === 'npb' || n === 'doc') paint();
+      if ((n === 'npb' || n === 'doc') && !busy) { remember(); paint(); }
     })
     .catch(() => {});
 
@@ -277,7 +283,7 @@
 
   function sticker(o, i) {
     return `<div class="stk-wrap ${o.wide ? 'stk-wrap--wide' : ''}" style="--i:${i};--r:${o.r}deg">
-      <div class="stk-wob"><button type="button" class="stk ${o.cls || ''}" data-go="${o.go}" ${o.tour ? `data-tour="${o.tour}"` : ''}>
+      <div class="stk-wob"${o.go === 'form:panic' ? ' data-anim' : ''}><button type="button" class="stk ${o.cls || ''}" data-go="${o.go}" ${o.tour ? `data-tour="${o.tour}"` : ''}>
         <span class="stk__top"><span class="stk__num">${o.n}</span><span class="stk__ico">${I[o.ic]}</span></span>
         <span class="stk__body"><span class="stk__t">${o.t}</span><span class="stk__h">${o.h}</span></span>
         ${o.img ? `<span class="stk__img" style="background-image:url(${o.img})"></span>` : ''}
@@ -340,16 +346,16 @@
     const mq = (cls, words = mqWords) => {
       // фраза повторяется дважды внутри половины ленты — так без пустот на любой ширине экрана
       const one = [...words, ...words].map((w, i) => `<span class="${i % 2 ? 'o' : ''}">${w}</span><i class="ast"></i>`).join('');
-      return `<div class="mq ${cls}"><div class="mq__skew"><div class="mq__track"><div class="mq__item">${one}</div><div class="mq__item">${one}</div></div></div></div>`;
+      return `<div class="mq ${cls}" data-anim><div class="mq__skew"><div class="mq__track"><div class="mq__item">${one}</div><div class="mq__item">${one}</div></div></div></div>`;
     };
 
     const manifesto = 'Почему стоит пойти в ССт? Многие из нас задавались этим вопросом перед анкетой — и сомневались. А в итоге получили море эмоций, смеха и незабываемых моментов, опыт настоящих проектов, кучу новых знакомств и самое главное — *людей.* ССт — это место, которое навсегда запомнится счастливыми годами студенчества. Место, где можно учиться на ошибках и бесконечно пробовать новое. Место, где тебя *слышат,* и ты знаешь: с любой проблемой можно прийти к своим. Попробовать не страшно — страшно упустить свою возможность. Потому что это *семья.*';
-    let acc = false;
+    let acc = false, wi = 0;
     const mfHtml = manifesto.split(/\s+/).map((w) => {
       const start = w.startsWith('*');
       if (start) acc = true;
       const clean = w.replace(/\*/g, '');
-      const html = `<span class="mf__w${acc ? ' acc' : ''}">${esc(clean)}</span>`;
+      const html = `<span class="mf__w${acc ? ' acc' : ''}" style="--w:${wi++}">${esc(clean)}</span>`;
       if (w.endsWith('*') || (w.includes('*') && !start)) acc = false;
       if (start && w.slice(1).includes('*')) acc = false;
       return html;
@@ -359,15 +365,10 @@
     <section class="hero" id="hero">
       <div class="hero__grid"></div>
       <div class="hero__bgphoto" id="heroPhoto"></div>
-      <div class="pix">
-        <i style="--x:8%;--y:14%;--s:10px;--o:.22"></i><i style="--x:84%;--y:9%;--s:14px;--o:.14;--d:-2s"></i>
-        <i style="--x:74%;--y:46%;--s:9px;--o:.2;--d:-4s"></i><i style="--x:6%;--y:58%;--s:16px;--o:.1;--d:-1s"></i>
-        <i style="--x:90%;--y:70%;--s:12px;--o:.16;--d:-3s"></i>
-      </div>
-      <div class="hero__ast" id="heroAst"><i class="ast"></i></div>
+      <div class="hero__ast" id="heroAst" data-anim><i class="ast"></i></div>
       <div class="hero__row rv">
         <span class="kicker">${spark('', '--s:11px')} @sprosinab_bot</span>
-        <span class="kicker kicker--ghost">сезон 26/27</span>
+        <span class="hero__chips" id="heroChips">${heroChips()}</span>
       </div>
       <h1 class="disp hero__title split-mask" data-split>Спроси<br><span class="line2">ССт НАБ</span></h1>
       <div class="hero__script rv" style="--d:.5s">
@@ -375,6 +376,9 @@
         <i class="brush hero__brush"></i>
       </div>
       <p class="lead hero__lead rv" style="--d:.65s">Документы, FAQ, вопросы руководству, идеи и сообщения о поломках — всё в одном окне, прямо в Telegram.</p>
+      <button type="button" class="hsearch rv" style="--d:.72s" data-go="search">
+        <span class="hsearch__ico">${I.search}</span><span class="hsearch__ph">Найти: стипендия, пересдача, 412…</span><span class="hsearch__k">поиск</span>
+      </button>
       <div class="hero__cta rv" style="--d:.8s">
         <button type="button" class="btn btn--wine btn--block" data-go="form:question"><span class="btn__txt">Задать вопрос</span> <span class="arr">${I.arr}</span></button>
         <div class="scroll-hint"><i></i> листай вниз — там много всего</div>
@@ -393,14 +397,17 @@
     ${mq('')}
     ${mq('mq--wine', mqChant)}
 
+    <section class="sec sec--night live" id="homeLive" hidden></section>
+
     <section class="sec sec--night">
       <div class="sec__head">
         <span class="kicker rv">${spark('', '--s:10px')} Главное</span>
         <h2 class="disp sec__title split-mask" data-split style="margin-top:12px">Что нового</h2>
       </div>
       <div class="fcards">
+        <div class="fcards" id="homeNews"></div>
         <article class="fcard rv">
-          <div class="fcard__photo"><img src="assets/brand/dance.webp" alt="Команда Студсовета НАБ танцует у корпуса" loading="lazy"></div>
+          <div class="fcard__photo"><img src="assets/brand/dance.webp" alt="Команда Студсовета НАБ танцует у корпуса" loading="lazy" decoding="async"></div>
           <div class="fcard__pills"><span class="kicker kicker--ink">Главное</span>${spark('spark--tw', '--s:18px')}</div>
           <h3 class="disp fcard__title">Бот стал <em>приложе&shy;нием</em></h3>
           <p class="fcard__text">Документы, FAQ, вопросы руководству и заявки о поломках — теперь в одном красивом окне, прямо в Telegram.</p>
@@ -419,9 +426,9 @@
           <h3 class="disp fcard__title">Ответы на <em>всё</em></h3>
           <p class="fcard__text">Сессия, пересдачи, общежитие, стипендия, личный кабинет — собрали самые частые вопросы в одну листалку.</p>
           <div class="fan">
-            <img src="${faqThumb(1)}" alt="" style="--i:0;--x:-70px;--r:-12deg" loading="lazy">
-            <img src="${faqThumb(14)}" alt="" style="--i:2;--x:70px;--r:11deg" loading="lazy">
-            <img src="${faqThumb(3)}" alt="" style="--i:1;--x:0px;--r:-1deg" loading="lazy">
+            <img src="${faqThumb(1)}" alt="" style="--i:0;--x:-70px;--r:-12deg" loading="lazy" decoding="async">
+            <img src="${faqThumb(14)}" alt="" style="--i:2;--x:70px;--r:11deg" loading="lazy" decoding="async">
+            <img src="${faqThumb(3)}" alt="" style="--i:1;--x:0px;--r:-1deg" loading="lazy" decoding="async">
           </div>
           <button type="button" class="btn btn--block" data-go="faq"><span class="btn__txt">Листать FAQ</span> <span class="arr">${I.arr}</span></button>
         </article>
@@ -457,18 +464,14 @@
     </section>
 
     <section class="fam" id="family">
-      <div class="fam__sticky" id="famSticky">
-        <div class="fam__photo">
-          <img class="bw" src="assets/brand/stage-bw.webp" alt="" loading="lazy">
-          <img class="col" src="assets/brand/stage.webp" alt="Студенческий совет НАБ на сцене" loading="lazy">
-          <div class="fam__shade"></div>
-        </div>
-        <div class="fam__frame"></div>
+      <div class="fam__card rv">
+        <img src="assets/brand/stage.webp" alt="Студенческий совет НАБ на сцене" loading="lazy" decoding="async">
+        <div class="fam__shade"></div>
         <span class="fam__lbl">ССт НАБ · Финансовый университет</span>
-        <div class="fam__ast"><i class="ast ast--spin"></i></div>
+        <div class="fam__ast"><i class="ast"></i></div>
         <div class="fam__text">
-          <span class="kicker fam__kick">${I.heart.replace('width="22" height="22"', 'width="12" height="12"')} наша команда</span>
-          <h2 class="disp fam__title split-mask" id="famTitle" data-split>Студенческий совет НАБ —</h2>
+          <span class="kicker">${I.heart.replace('width="22" height="22"', 'width="12" height="12"')} наша команда</span>
+          <h2 class="disp fam__title">Студенческий совет НАБ —</h2>
           <span class="scr fam__script">больше, чем семья</span>
         </div>
       </div>
@@ -488,7 +491,7 @@
 
       <div class="polaroid rv">
         <i class="tape"></i>
-        <img src="assets/brand/selfie.webp" alt="Команда ССт НАБ за кулисами" loading="lazy">
+        <img src="assets/brand/selfie.webp" alt="Команда ССт НАБ за кулисами" loading="lazy" decoding="async">
         <span class="scr">за кулисами ♡</span>
       </div>
       <div class="gap"></div><div class="gap"></div>
@@ -497,8 +500,8 @@
 
     <section class="chant" id="chant">
       <div class="chant__photo">
-        <img class="bw" src="assets/brand/scene-bw.webp" alt="" loading="lazy">
-        <img class="col" src="assets/brand/scene.webp" alt="Студсовет НАБ на сцене" loading="lazy">
+        <img class="bw" src="assets/brand/scene-bw.webp" alt="" loading="lazy" decoding="async">
+        <img class="col" src="assets/brand/scene.webp" alt="Студсовет НАБ на сцене" loading="lazy" decoding="async">
       </div>
       <div class="chant__in">
         <span class="kicker kicker--wine rv">${I.mega.replace('width="22" height="22"', 'width="13" height="13"')} Кричалка ССт НАБ</span>
@@ -517,7 +520,7 @@
       </div>
       <div class="gallery" id="gallery">
         ${[['stage', 'НАБ, вперёд!'], ['scene', 'наша сцена'], ['dance', 'в одном ритме'], ['selfie', 'за кулисами'], ['people', 'вся семья']]
-          .map(([f, c], i) => `<figure class="gph${f === 'scene' ? ' gph--tall' : ''}" style="--r:${[-3, 2.5, -2, 3, -1.5][i]}deg">${i % 2 ? '' : '<i class="tape"></i>'}<img src="assets/brand/${f}.webp" alt="" loading="lazy"><figcaption class="scr">${c}</figcaption></figure>`).join('')}
+          .map(([f, c], i) => `<figure class="gph${f === 'scene' ? ' gph--tall' : ''}" style="--r:${[-3, 2.5, -2, 3, -1.5][i]}deg">${i % 2 ? '' : '<i class="tape"></i>'}<img src="assets/brand/${f}.webp" alt="" loading="lazy" decoding="async"><figcaption class="scr">${c}</figcaption></figure>`).join('')}
       </div>
     </section>
 
@@ -549,11 +552,11 @@
 
   S.npb = () => {
     const ready = Object.keys(DOCS).length;
-    const rows = NPB.map(([id, title, sub], i) => {
+    const rows = D().docs.map(({ id, title, sub }, i) => {
       const d = DOCS[id];
       const has = d && d.pages;
       return `<button type="button" class="ticket ${i % 3 === 1 ? 'ticket--mint' : ''} rv" style="--d:${i * 0.05}s" ${has ? `data-go="doc:${id}"` : `data-senddoc="${id}"`}>
-        <span class="ticket__n">${has ? `<img src="${docThumb(d.slug, 1)}" alt="" loading="lazy">` : pad2(id)}</span>
+        <span class="ticket__n">${has ? `<img src="${docThumb(d.slug, 1)}" alt="" loading="lazy" decoding="async">` : pad2(id)}</span>
         <span><span class="ticket__t">${esc(title)}</span>
         <span class="ticket__s">${has ? `${d.pages} стр. · листать здесь` : `${esc(sub)} · пришлём PDF в чат`}</span></span>
         <span class="ticket__go">${I.arr}</span></button>`;
@@ -628,7 +631,7 @@
         lead: 'Впиши номер аудитории — покажем этаж и точку на плане. Карту можно двигать и приближать пальцами.' })}
       <div class="search rv" style="--d:.45s">
         ${I.pin.replace('width="22" height="22"', 'width="18" height="18" class="search__ico"')}
-        <input type="search" id="roomQ" inputmode="text" placeholder="Номер аудитории: 412, 105-1…" autocomplete="off" enterkeyhint="search">
+        <input type="search" id="roomQ" inputmode="text" placeholder="Аудитория: 412 или 105-1" autocomplete="off" enterkeyhint="search">
         <button type="button" class="search__x" id="roomX" aria-label="Очистить" hidden>×</button>
       </div>
       <p class="roomres" id="roomRes" aria-live="polite"></p>
@@ -659,6 +662,9 @@
       </div>
       <button type="button" class="btn btn--ghost btn--block rv" data-senddoc="map"><span class="btn__txt">Прислать PDF карты в чат</span></button>
     </div>`;
+
+  let mapResize = null;
+  window.addEventListener('resize', () => { if (mapResize) mapResize(); });
 
   function setupMap() {
     const view_ = $('#mapview'), zoom = $('#mapzoom'), img = $('#mapimg'), pin = $('#mpin');
@@ -830,20 +836,26 @@
     q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(search, 350); });
     q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { q.blur(); clearTimeout(timer); search(); } });
     qx.addEventListener('click', () => { q.value = ''; search(); q.focus(); });
-    window.addEventListener('resize', () => { if (current().name === 'map') cover(false); });
+    let lastW = window.innerWidth;
+    mapResize = () => {
+      if (current().name !== 'map' || !view_.isConnected) return;
+      if (window.innerWidth !== lastW) { lastW = window.innerWidth; cover(false); }  // поворот экрана
+      else apply(false);                                                               // клавиатура — зум не трогаем
+    };
 
     mapReady.then((m) => {
       if (!m || current().name !== 'map') return;
       floors = m.floors;
       const start = floors.find((f) => f.id === current().arg) || floors.find((f) => f.id === '1') || floors[0];
       show(start.id);
+      if (pendingRoom) { q.value = pendingRoom; pendingRoom = ''; search(); }
     });
   }
 
   S.groups = () => `<div class="page">
       ${pageHead({ rail: 'Ресурсы', title: 'Важные', acc: 'группы', script: 'будь в курсе',
         lead: 'Все официальные ресурсы факультета и Студсовета — подписывайся, чтобы ничего не пропустить.' })}
-      <div class="links">${GROUPS.map((g, i) => `<button type="button" class="lnk rv" style="--d:${i * 0.08}s" data-link="${g.u}">
+      <div class="links">${D().links.map((g, i) => `<button type="button" class="lnk rv" style="--d:${i * 0.08}s" data-link="${g.u}">
         <span class="lnk__k">${esc(g.k)}</span>
         <span class="lnk__t">${esc(g.t)}</span>
         <span class="lnk__s">${esc(g.s)}</span>
@@ -853,13 +865,13 @@
   S.contacts = () => `<div class="page">
       ${pageHead({ rail: 'Контакты', title: 'Наши', acc: 'контакты', script: 'пиши смело',
         lead: 'Руководство Студенческого совета НАБ — можно написать напрямую.' })}
-      <div class="badges">${PEOPLE.map((p, i) => `<article class="badge rv" style="--i:${i};--d:${i * 0.12}s">
-        <div class="badge__row"><span class="badge__ava">${esc(p.ini)}</span>
+      <div class="badges">${D().people.map((p, i) => `<article class="badge rv" style="--i:${i};--d:${i * 0.12}s">
+        <div class="badge__row"><span class="badge__ava"><span>${esc(p.ini)}</span></span>
           <span><span class="badge__role">${esc(p.role)}</span><div class="badge__name">${esc(p.name)}</div></span></div>
         <span class="scr">${esc(p.note)}</span>
         <div class="badge__btns">
-          <a class="btn btn--sm btn--cream" href="tel:${p.tel.replace(/[^+\d]/g, '')}">${I.phone.replace('width="22" height="22"', 'width="15" height="15"')} Позвонить</a>
-          <button type="button" class="btn btn--sm btn--wine" data-link="https://t.me/${p.tg}">${I.tg} Написать</button>
+          ${p.tel ? `<a class="btn btn--sm btn--cream" href="tel:${esc(p.tel.replace(/[^+\d]/g, ''))}">${I.phone.replace('width="22" height="22"', 'width="15" height="15"')}<span>Позвонить</span></a>` : ''}
+          ${p.tg ? `<button type="button" class="btn btn--sm btn--wine" data-link="https://t.me/${esc(p.tg)}">${I.tg}<span>Написать</span></button>` : ''}
         </div></article>`).join('')}</div>
       <div class="note rv"><span>💬</span><span>Не хочешь писать лично? Задай вопрос через приложение — можно анонимно.</span></div>
       <div class="gap"></div>
@@ -882,7 +894,7 @@
             </div>
           </div>
           ${f.place ? `<div class="field"><span class="label">Корпус и аудитория</span>
-            <input class="inp" id="place" maxlength="200" placeholder="Например: Кибальчича, ауд. 206" autocomplete="off"><i class="line"></i></div>` : ''}
+            <input class="inp" id="place" maxlength="200" placeholder="Корпус и аудитория, напр. 206" autocomplete="off"><i class="line"></i></div>` : ''}
           <div class="field">
             <span class="label">${f.place ? 'Что случилось' : 'Текст'}</span>
             <textarea class="inp" id="text" maxlength="3000" placeholder="${esc(f.ph)}"></textarea><i class="line"></i>
@@ -917,11 +929,523 @@
         <p class="lead">${esc(txt)}</p>
       </div>
       <div class="gap"></div>
-      <button type="button" class="btn btn--block" data-home="1"><span class="btn__txt">На главную</span></button>
+      <button type="button" class="btn btn--block" data-go="my"><span class="btn__txt">Мои обращения</span> <span class="arr">${I.arr}</span></button>
+      <div class="gap"></div>
+      <button type="button" class="btn btn--ghost btn--block" data-home="1"><span class="btn__txt">На главную</span></button>
       <div class="gap"></div>
       <button type="button" class="btn btn--ghost btn--block" data-go="form:${esc(kind)}"><span class="btn__txt">Отправить ещё одно</span></button>
     </div>`;
   };
+
+  /* ================= Живые данные: новости, анонсы, опросы, обращения ================= */
+
+  // Всё, что руководство меняет в Пульте, приходит одним запросом /api/bootstrap.
+  let DATA = null;
+  const fallbackData = () => ({
+    me: {}, news: [], events: [], polls: [], myUnread: 0, myCount: 0,
+    links: GROUPS.map((g) => ({ t: g.t, k: g.k, s: g.s, u: g.u })),
+    people: PEOPLE.map((p) => ({ ...p })),
+    docs: NPB.map(([id, title, sub]) => ({ id, title, sub })),
+  });
+  const D = () => DATA || fallbackData();
+  const isAdmin = () => Boolean(DATA && DATA.me && DATA.me.isAdmin);
+
+  async function loadData() {
+    if (!inTelegram) { DATA = null; return null; }
+    try {
+      const r = await api('/bootstrap', {});
+      DATA = r.data;
+    } catch (e) {
+      if (e.code) showApiError(e);
+    }
+    onData();
+    return DATA;
+  }
+  const dataReady = loadData();
+
+  function onData() {
+    renderMenu();
+    const c = current();
+    if (c.name === 'home') fillHome();
+    else if (['groups', 'contacts', 'npb', 'events', 'polls', 'news'].includes(c.name) && !busy) { remember(); paint(); }
+  }
+
+  /* ---------------- Анонимная статистика ---------------- */
+  // Считаем только «что открывают и что ищут» — без привязки к человеку.
+  const trackQ = [];
+  let trackT = null;
+  function track(n, k = '') {
+    if (!inTelegram) return;
+    trackQ.push({ n, k: String(k).slice(0, 80) });
+    clearTimeout(trackT);
+    trackT = setTimeout(flushTrack, 2500);
+  }
+  function flushTrack() {
+    if (!trackQ.length) return;
+    const events = trackQ.splice(0, 40);
+    api('/track', { events }).catch(() => {});
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) flushTrack(); });
+  track('open', '');
+  track('platform', (tg && tg.platform) || 'web');
+
+  /* ---------------- Мелкие помощники ---------------- */
+
+  const plural = (n, a, b, c) => { const x = Math.abs(n) % 100, y = x % 10; return x > 10 && x < 20 ? c : y > 1 && y < 5 ? b : y === 1 ? a : c; };
+  const fmtDate = (ts) => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(ts * 1000));
+  const fmtShort = (ts) => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(new Date(ts * 1000));
+  const nl2br = (t) => esc(t).replace(/\n/g, '<br>');
+  const STATUS = { new: ['передано', 'st--new'], work: ['в работе', 'st--work'], done: ['решено', 'st--done'] };
+  const starRow = (n, cls = '') => `<span class="stars ${cls}">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('')}</span>`;
+  I.search = svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>', 18);
+  I.cal = svg('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>');
+  I.chart = svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>');
+  I.inbox = svg('<path d="M4 13h4l2 3h4l2-3h4"/><path d="M5 5h14l1 8v6H4v-6z"/>');
+  I.bell = svg('<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>', 16);
+  I.panel = svg('<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>');
+
+  /* ---------------- Главная: живые блоки ---------------- */
+
+  function heroChips() {
+    const d = D();
+    const out = [];
+    if (isAdmin()) {
+      const n = d.adminNew || 0;
+      out.push(`<button type="button" class="kicker kicker--wine hchip" data-go="admin">${I.panel.replace('width="22" height="22"', 'width="12" height="12"')} Пульт${n ? ` · <b>${n}</b>` : ''}</button>`);
+    }
+    if (d.myCount) {
+      out.push(`<button type="button" class="kicker kicker--ghost hchip" data-go="my">Мои обращения${d.myUnread ? ` <b class="dot">${d.myUnread}</b>` : ''}</button>`);
+    }
+    return out.join('') || '<span class="kicker kicker--ghost">сезон 26/27</span>';
+  }
+
+  function eventCard(v, compact = false) {
+    const rsvp = v.rsvp ? `<div class="ev__rsvp">
+        <button type="button" class="ev__b ${v.my === 'yes' ? 'on' : ''}" data-rsvp="yes" data-id="${v.id}">${v.my === 'yes' ? '✓ ' : ''}Приду</button>
+        <button type="button" class="ev__b ev__b--no ${v.my === 'no' ? 'on' : ''}" data-rsvp="no" data-id="${v.id}">Не приду</button>
+        <span class="ev__cnt">идут: <b>${v.counts ? v.counts.yes : 0}</b></span></div>`
+      : (!v.notifyAll && v.days >= 0 ? `<div class="ev__rsvp"><button type="button" class="ev__b ${v.subscribed ? 'on' : ''}" data-evsub="${v.id}">${I.bell} ${v.subscribed ? 'Напомню' : 'Напомнить'}</button></div>` : '');
+    return `<article class="ev ${v.days < 0 ? 'ev--past' : ''} ${compact ? 'ev--compact' : ''}" data-ev="${v.id}">
+      <div class="ev__date"><b>${v.day}</b><span>${esc(v.mon)}</span><i>${esc(v.wday)}</i></div>
+      <div class="ev__body">
+        <span class="ev__kind">${esc(v.kindTitle)} · ${esc(v.when)}</span>
+        <h3 class="ev__t">${esc(v.title)}</h3>
+        <p class="ev__meta">${v.time ? `🕒 ${esc(v.time)}` : ''}${v.place ? ` 📍 ${esc(v.place)}` : ''}</p>
+        ${!compact && v.descr ? `<p class="ev__d">${nl2br(v.descr)}</p>` : ''}
+        ${v.url ? `<button type="button" class="ev__link" data-link="${esc(v.url)}">Подробнее ↗</button>` : ''}
+        ${v.days >= 0 ? rsvp : ''}
+      </div></article>`;
+  }
+
+  function pollCard(p) {
+    const total = (p.votes || []).reduce((a, b) => a + b, 0) || 1;
+    const showRes = p.votes && (p.mine.length || p.closed);
+    return `<article class="poll" data-poll="${p.id}">
+      <span class="poll__k">${spark('', '--s:11px')} опрос${p.closed ? ' · закрыт' : ''}${p.multi ? ' · можно несколько' : ''}</span>
+      <h3 class="poll__q">${esc(p.question)}</h3>
+      <div class="poll__opts">${p.options.map((o, i) => {
+        const v = p.votes ? p.votes[i] : 0;
+        const pct = Math.round((v * 100) / total);
+        return `<button type="button" class="poll__o ${p.mine.includes(i) ? 'on' : ''} ${showRes ? 'res' : ''}" data-opt="${i}" ${p.closed ? 'disabled' : ''} style="--p:${showRes ? pct : 0}%">
+          <span class="poll__bar"></span><span class="poll__t">${esc(o)}</span>${showRes ? `<span class="poll__pct">${pct}%</span>` : ''}</button>`;
+      }).join('')}</div>
+      <p class="poll__n">${p.voters ? `Проголосовали: ${p.voters}` : 'Будь первым ✦'} · анонимно</p>
+    </article>`;
+  }
+
+  function newsCard(n, i = 0) {
+    return `<article class="fcard news rv ${['', 'fcard--mint', 'fcard--sand'][i % 3]}" data-go="news:${n.id}">
+      ${n.image ? `<div class="fcard__photo"><img src="${esc(n.image)}" alt="" loading="lazy" decoding="async"></div>` : ''}
+      <div class="fcard__pills"><span class="kicker ${i % 3 ? 'kicker--wine' : 'kicker--ink'}">${esc(n.tag || 'Новость')}</span>${n.pinned ? spark('', '--s:16px') : ''}<span class="news__date">${esc(n.date)}</span></div>
+      <h3 class="disp fcard__title">${esc(n.title)}</h3>
+      ${n.body ? `<p class="fcard__text">${esc(n.body.length > 160 ? n.body.slice(0, 158) + '…' : n.body)}</p>` : ''}
+      <span class="news__more">Читать ${I.arr}</span>
+    </article>`;
+  }
+
+  function fillHome() {
+    const d = D();
+    const chips = $('#heroChips');
+    if (chips) chips.innerHTML = heroChips();
+    const nb = $('#homeNews');
+    if (nb) {
+      nb.innerHTML = d.news.slice(0, 4).map(newsCard).join('');
+      if (io) $$('.rv', nb).forEach((el) => io.observe(el));
+    }
+    const live = $('#homeLive');
+    if (!live) return;
+    const evs = d.events.filter((v) => v.days >= 0).slice(0, 3);
+    const polls = d.polls.filter((p) => !p.closed).slice(0, 1);
+    if (!evs.length && !polls.length) { live.hidden = true; return; }
+    live.hidden = false;
+    live.innerHTML = `<div class="sec__head">
+        <span class="kicker">${I.cal.replace('width="22" height="22"', 'width="12" height="12"')} Скоро</span>
+        <h2 class="disp sec__title" style="margin-top:12px">Анонсы</h2>
+        <span class="scr sec__sub">отметься — мы ждём</span>
+      </div>
+      <div class="evs">${evs.map((v) => eventCard(v, true)).join('')}</div>
+      ${evs.length ? '<button type="button" class="btn btn--ghost btn--block" data-go="events" style="margin-top:14px"><span class="btn__txt">Все анонсы</span> <span class="arr">' + I.arr + '</span></button>' : ''}
+      ${polls.map(pollCard).join('')}`;
+  }
+
+  // кнопки «Приду / Не приду», колокольчик, голос в опросе — работают на любом экране
+  document.addEventListener('click', async (e) => {
+    const rs = e.target.closest('[data-rsvp]');
+    const sub = e.target.closest('[data-evsub]');
+    const opt = e.target.closest('.poll__o');
+    if (!rs && !sub && !opt) return;
+    e.stopPropagation();
+    if (!requireTelegram()) return;
+    try {
+      if (rs) {
+        const id = Number(rs.dataset.id);
+        const v = D().events.find((x) => x.id === id);
+        const answer = v && v.my === rs.dataset.rsvp ? '' : rs.dataset.rsvp;
+        haptic(answer === 'yes' ? 'success' : 'select');
+        const r = await api('/event-rsvp', { id, answer });
+        replaceEvent(r.event);
+        toast(answer === 'yes' ? 'Ждём тебя! Напомним накануне ✦' : answer === 'no' ? 'Отметили, что не придёшь' : 'Отметка снята');
+      } else if (sub) {
+        const id = Number(sub.dataset.evsub);
+        const v = D().events.find((x) => x.id === id);
+        const on = !(v && v.subscribed);
+        haptic('select');
+        await api('/event-sub', { id, on });
+        if (v) v.subscribed = on;
+        replaceEvent(v);
+        toast(on ? 'Напомню за день и в день события 🔔' : 'Напоминание выключено');
+      } else if (opt && !opt.disabled) {
+        const card = opt.closest('[data-poll]');
+        const id = Number(card.dataset.poll);
+        const p = D().polls.find((x) => x.id === id);
+        let options = [Number(opt.dataset.opt)];
+        if (p && p.multi) {
+          const set = new Set(p.mine);
+          set.has(options[0]) ? set.delete(options[0]) : set.add(options[0]);
+          options = [...set];
+        }
+        haptic('success');
+        const r = await api('/poll-vote', { id, options });
+        if (DATA) DATA.polls = DATA.polls.map((x) => (x.id === id ? r.poll : x));
+        $$(`[data-poll="${id}"]`).forEach((el) => { el.outerHTML = pollCard(r.poll); });
+      }
+    } catch (err) { showApiError(err); }
+  }, true);
+
+  function replaceEvent(v) {
+    if (!v) return;
+    if (DATA) DATA.events = DATA.events.map((x) => (x.id === v.id ? v : x));
+    $$(`[data-ev="${v.id}"]`).forEach((el) => { el.outerHTML = eventCard(v, el.classList.contains('ev--compact')); });
+  }
+
+  /* ---------------- Экраны: анонсы, опросы, новость ---------------- */
+
+  S.events = () => {
+    const evs = D().events;
+    const up = evs.filter((v) => v.days >= 0);
+    const past = evs.filter((v) => v.days < 0);
+    return `<div class="page">
+      ${pageHead({ rail: 'Анонсы', title: 'Анонсы', acc: 'и события', script: 'не пропусти',
+        lead: 'Собрания, выезды, отборы и дедлайны. Отмечай «Приду» — руководство видит явку заранее, а бот напомнит накануне.' })}
+      <div class="evs">${up.length ? up.map((v) => eventCard(v)).join('') : `<div class="empty rv">${I.cal}<p>Пока ничего не запланировано.<br>Как только появится событие — оно будет здесь.</p></div>`}</div>
+      ${past.length ? `<h3 class="sub-h">Недавно прошли</h3><div class="evs">${past.map((v) => eventCard(v, true)).join('')}</div>` : ''}
+    </div>`;
+  };
+
+  S.polls = () => {
+    const ps = D().polls;
+    return `<div class="page">
+      ${pageHead({ rail: 'Опросы', title: 'Твой', acc: 'голос', script: 'каждый важен',
+        lead: 'Голосование анонимное: руководство видит только итоги. Результаты появятся сразу после твоего голоса.' })}
+      ${ps.length ? ps.map(pollCard).join('') : `<div class="empty rv">${I.chart}<p>Сейчас нет открытых опросов.</p></div>`}
+    </div>`;
+  };
+
+  S.news = (id) => {
+    const n = D().news.find((x) => String(x.id) === String(id));
+    if (!n) return `<div class="page">${pageHead({ rail: 'Новости', title: 'Новость', acc: 'не найдена', lead: 'Возможно, её уже убрали.' })}</div>`;
+    const btn = n.btnText && n.btnUrl
+      ? (n.btnUrl.startsWith('#') ? `<button type="button" class="btn btn--wine btn--block" data-go="${esc(n.btnUrl.replace(/^#\/?/, '').replace('/', ':'))}"><span class="btn__txt">${esc(n.btnText)}</span> <span class="arr">${I.arr}</span></button>`
+        : `<button type="button" class="btn btn--wine btn--block" data-link="${esc(n.btnUrl)}"><span class="btn__txt">${esc(n.btnText)}</span> <span class="arr">${I.arr}</span></button>`) : '';
+    return `<div class="page">
+      ${pageHead({ rail: n.tag || 'Новости', title: n.title, ast: false, script: n.date })}
+      ${n.image ? `<figure class="news__img rv"><img src="${esc(n.image)}" alt=""></figure>` : ''}
+      <div class="news__body rv">${nl2br(n.body)}</div>
+      ${btn}
+      <div class="gap"></div>
+      <button type="button" class="btn btn--ghost btn--block" data-home="1"><span class="btn__txt">На главную</span></button>
+    </div>`;
+  };
+
+  /* ---------------- Мои обращения ---------------- */
+
+  let MY = null;
+  S.my = () => `<div class="page">
+      ${pageHead({ rail: 'Мои обращения', title: 'Мои', acc: 'обращения', script: 'всё под контролем',
+        lead: 'Статусы, ответы руководства и переписка. Анонимные обращения видишь только ты.' })}
+      <div id="myList"><div class="empty">${I.inbox}<p>Загружаю…</p></div></div>
+    </div>`;
+
+  function repCard(r) {
+    const [st, cls] = STATUS[r.status] || STATUS.new;
+    const msgs = (r.messages || []).map((m) => `<div class="msg msg--${m.author === 'team' ? 'team' : 'me'}">
+        <span class="msg__who">${m.author === 'team' ? 'Руководство ССт НАБ' : 'Ты'} · ${fmtShort(m.at)}</span>${nl2br(m.text)}</div>`).join('');
+    const rate = r.status === 'done' ? `<div class="rate" data-rate="${r.id}">
+        <span class="label">${r.rating ? 'Твоя оценка' : 'Помогло? Оцени решение'}</span>
+        <div class="rate__stars">${[1, 2, 3, 4, 5].map((i) => `<button type="button" class="rstar ${i <= (r.rating || 0) ? 'on' : ''}" data-star="${i}" aria-label="${i} из 5">★</button>`).join('')}</div>
+        <textarea class="inp rate__txt" maxlength="1000" placeholder="Пара слов: что понравилось, что улучшить (необязательно)">${esc(r.review || '')}</textarea>
+        <button type="button" class="btn btn--sm btn--wine" data-rate-send="${r.id}">${r.review ? 'Обновить отзыв' : 'Отправить отзыв'}</button>
+      </div>` : '';
+    const reply = r.canReply ? `<div class="reply">
+        <textarea class="inp" maxlength="3000" placeholder="${r.status === 'done' ? 'Если вопрос не решён — напиши, и обращение снова откроется' : 'Написать руководству по этому обращению…'}"></textarea>
+        <button type="button" class="btn btn--sm btn--cream" data-reply="${r.id}">Отправить</button></div>` : '';
+    return `<article class="rep ${r.unread ? 'rep--new' : ''}" data-rep="${r.id}">
+      <button type="button" class="rep__head" data-open="${r.id}">
+        <span class="rep__ico">${r.icon}</span>
+        <span class="rep__main"><span class="rep__k">${esc(r.kindTitle)} №${r.id} · ${fmtShort(r.createdAt)}${r.anon ? ' · 🕵️ анонимно' : ''}</span>
+          <span class="rep__t">${esc(r.text.length > 90 ? r.text.slice(0, 88) + '…' : r.text)}</span></span>
+        <span class="st ${cls}">${st}</span>
+        ${r.unread ? '<i class="rep__dot"></i>' : ''}
+      </button>
+      <div class="rep__more">
+        <p class="rep__full">${nl2br(r.text)}${r.location ? `<br><b>📍 ${esc(r.location)}</b>` : ''}</p>
+        ${msgs ? `<div class="thread">${msgs}</div>` : '<p class="rep__wait">Ответа пока нет — мы напишем сюда и в чат с ботом.</p>'}
+        ${rate}${reply}
+      </div></article>`;
+  }
+
+  async function setupMy() {
+    const box = $('#myList');
+    if (!inTelegram) { box.innerHTML = `<div class="empty">${I.inbox}<p>Открой приложение у бота @sprosinab_bot — здесь появятся твои обращения.</p></div>`; return; }
+    try {
+      const r = await api('/my-reports', {});
+      MY = r.data;
+      if (DATA) DATA.myUnread = 0;
+    } catch (e) { showApiError(e); MY = MY || []; }
+    if (current().name !== 'my') return;
+    box.innerHTML = MY.length ? MY.map(repCard).join('') : `<div class="empty">${I.inbox}<p>Пока нет обращений.<br>Задай вопрос или сообщи о проблеме — статус будет виден здесь.</p>
+      <button type="button" class="btn btn--wine" data-go="form:question"><span class="btn__txt">Задать вопрос</span></button></div>`;
+    const open = current().arg;
+    const first = $(`[data-rep="${open}"]`) || (MY.length === 1 ? $('[data-rep]') : null);
+    if (first) first.classList.add('open');
+  }
+
+  document.addEventListener('click', async (e) => {
+    const head = e.target.closest('[data-open]');
+    const star = e.target.closest('[data-star]');
+    const send = e.target.closest('[data-rate-send]');
+    const rep = e.target.closest('[data-reply]');
+    if (head) { haptic('select'); head.closest('.rep').classList.toggle('open'); return; }
+    if (star) {
+      const box = star.closest('[data-rate]');
+      const n = Number(star.dataset.star);
+      const prev = $$('.rstar.on', box).length;
+      const paint = (k) => $$('.rstar', box).forEach((b, i) => { b.classList.toggle('on', i < k); b.classList.remove('pop'); });
+      paint(n);
+      void star.offsetWidth; star.classList.add('pop');
+      haptic(n >= 4 ? 'success' : 'select');
+      try {
+        const r = await api('/rate', { id: Number(box.dataset.rate), rating: n });
+        updateRep(r.report, true);
+        toast(n >= 4 ? 'Спасибо! Рады, что помогли 💚' : 'Спасибо за честную оценку — разберёмся');
+      } catch (err) { paint(prev); showApiError(err); }
+      return;
+    }
+    if (send) {
+      const box = send.closest('[data-rate]');
+      busyBtn(send, true);
+      try {
+        const r = await api('/rate', { id: Number(send.dataset.rateSend), review: $('.rate__txt', box).value });
+        haptic('success'); toast('Отзыв отправлен ✦'); updateRep(r.report, true, false);
+      } catch (err) { showApiError(err); } finally { busyBtn(send, false); }
+      return;
+    }
+    if (rep) {
+      const ta = rep.parentNode.querySelector('textarea');
+      if (!ta.value.trim()) { ta.focus(); toast('Напиши текст ответа', 'err'); return; }
+      busyBtn(rep, true);
+      try {
+        const r = await api('/report-reply', { id: Number(rep.dataset.reply), text: ta.value });
+        haptic('success'); toast('Отправлено руководству ✦'); updateRep(r.report, true, false);
+      } catch (err) { showApiError(err); } finally { busyBtn(rep, false); }
+    }
+  });
+
+  function updateRep(r, keepOpen, keepText = true) {
+    if (!r) return;
+    MY = (MY || []).map((x) => (x.id === r.id ? r : x));
+    const el = $(`[data-rep="${r.id}"]`);
+    if (!el) return;
+    const draft = keepText ? { review: ($('.rate__txt', el) || {}).value, reply: ($('.reply textarea', el) || {}).value } : {};
+    el.outerHTML = repCard(r);
+    const nel = $(`[data-rep="${r.id}"]`);
+    if (keepOpen) nel.classList.add('open');
+    if (draft.review != null && $('.rate__txt', nel) && draft.review !== '') $('.rate__txt', nel).value = draft.review;
+    if (draft.reply && $('.reply textarea', nel)) $('.reply textarea', nel).value = draft.reply;
+  }
+
+  /* ---------------- Единый поиск ---------------- */
+
+  const SECTIONS = [
+    ['form:question', 'Задать вопрос', 'вопрос руководству ответ анонимно спросить'],
+    ['form:initiative', 'Инициатива', 'идея предложить запрос'],
+    ['form:repair', 'Поломки', 'сломалось ремонт фото корпус розетка дверь батарея проектор'],
+    ['form:panic', 'Тревожная кнопка', 'sos срочно помощь конфликт'],
+    ['npb', 'НПБ — документы', 'устав правила положение документы нормативно'],
+    ['faq', 'FAQ', 'вопросы ответы сессия общежитие стипендия'],
+    ['map', 'Карта корпуса', 'аудитория этаж корпус найти где'],
+    ['events', 'Анонсы', 'события собрание выезд дедлайн мероприятие'],
+    ['polls', 'Опросы', 'голосование опрос'],
+    ['my', 'Мои обращения', 'статус ответ мои'],
+    ['groups', 'Важные группы', 'канал телеграм вк паблик'],
+    ['contacts', 'Наши контакты', 'председатель телефон написать связаться'],
+  ];
+  let SEARCH_SRC = null;
+  async function searchSources() {
+    if (SEARCH_SRC) return SEARCH_SRC;
+    const [faq, map] = await Promise.all([getJSON('assets/faq/text.json'), mapReady]);
+    const docs = await Promise.all(Object.values(DOCS).map(async (d) => ({ d, t: await getJSON(`assets/docs/${d.slug}/text.json`) })));
+    SEARCH_SRC = { faq: faq || [], map: map || null, docs };
+    return SEARCH_SRC;
+  }
+  function snippet(text, q) {
+    const n = normQ(text);
+    const i = n.indexOf(q);
+    if (i < 0) return esc(text.slice(0, 90));
+    const a = Math.max(0, i - 40);
+    const part = text.slice(a, i + q.length + 60);
+    const j = normQ(part).indexOf(q);
+    return (a ? '…' : '') + esc(part.slice(0, j)) + '<mark>' + esc(part.slice(j, j + q.length)) + '</mark>' + esc(part.slice(j + q.length)) + '…';
+  }
+  let pendingRoom = '';
+  let pendingEvent = '';
+  async function runSearch(raw) {
+    const q = normQ(raw).trim();
+    const box = $('#sres');
+    if (!box) return;
+    if (q.length < 2) { box.innerHTML = searchHints(); return; }
+    const src = await searchSources();
+    const d = D();
+    const groups = [];
+    const add = (title, items) => { if (items.length) groups.push(`<h3 class="sub-h">${title}</h3>` + items.join('')); };
+    const res = (go, tag, h, s, extra = '') => `<button type="button" class="res" ${go} ${extra}><span class="res__p">${tag}</span><span class="res__h">${h}</span><span class="res__s">${s}</span></button>`;
+    // аудитория по номеру
+    const room = q.replace(/\s/g, '').replace(/^(ауд\.?|аудитория|каб\.?)/, '');
+    if (/^-?\d{2,3}[абв]?(-1)?$/.test(room) && src.map) {
+      const fl = src.map.floors;
+      let f = fl.find((x) => x.rooms[room]);
+      if (!f) {
+        const lvl = room.startsWith('0') || room.startsWith('-') ? '-1' : room[0];
+        f = fl.find((x) => x.id === (room.endsWith('-1') ? lvl + 'к' : lvl));
+      }
+      if (f) add('Аудитория', [res(`data-room="${esc(room)}"`, '📍', `Аудитория ${esc(room)}`, `${esc(f.t)}, ${esc(f.b)} — показать на карте`)]);
+    }
+    add('Разделы', SECTIONS.filter(([, t, k]) => normQ(t + ' ' + k).includes(q)).slice(0, 4)
+      .map(([go, t]) => res(`data-go="${go}"`, '→', esc(t), 'раздел приложения')));
+    add('Новости', d.news.filter((n) => normQ(n.title + ' ' + n.body).includes(q)).slice(0, 4)
+      .map((n) => res(`data-go="news:${n.id}"`, 'NEW', esc(n.title), snippet(n.body || n.title, q))));
+    add('Анонсы', d.events.filter((v) => normQ(v.title + ' ' + v.descr + ' ' + v.place).includes(q)).slice(0, 4)
+      .map((v) => res(`data-go="events:${v.id}"`, `${v.day} ${esc(v.mon)}`, esc(v.title), esc(v.when))));
+    add('FAQ', src.faq.map((t, i) => ({ t, p: i + 1 })).filter((x) => normQ(x.t).includes(q)).slice(0, 6)
+      .map((x) => res(`data-go="faqpage:${x.p}"`, `стр. ${x.p}`, 'FAQ', snippet(x.t, q))));
+    const docHits = [];
+    d.docs.forEach((doc) => {
+      const meta = DOCS[doc.id];
+      const texts = (src.docs.find((x) => x.d.id === doc.id) || {}).t || [];
+      if (normQ(doc.title + ' ' + (doc.sub || '')).includes(q)) docHits.push(res(meta ? `data-go="doc:${doc.id}"` : `data-senddoc="${doc.id}"`, `№${esc(doc.id)}`, esc(doc.title), esc(doc.sub || 'документ')));
+      texts.forEach((t, i) => { if (docHits.length < 8 && normQ(t).includes(q)) docHits.push(res(`data-go="doc:${doc.id}:${i + 1}"`, `стр. ${i + 1}`, esc(doc.title), snippet(t, q))); });
+    });
+    add('Документы НПБ', docHits.slice(0, 8));
+    add('Контакты и группы', [
+      ...d.people.filter((p) => normQ(p.name + ' ' + p.role).includes(q)).map((p) => res('data-go="contacts"', esc(p.ini), esc(p.name), esc(p.role))),
+      ...d.links.filter((l) => normQ(l.t + ' ' + l.s + ' ' + l.k).includes(q)).map((l) => res(`data-link="${esc(l.u)}"`, '↗', esc(l.t), esc(l.s || l.k))),
+    ].slice(0, 5));
+    box.innerHTML = groups.length ? groups.join('') : `<div class="empty">${I.search}<p>Ничего не нашли по «${esc(raw)}».<br>Попробуй другое слово — или задай вопрос руководству.</p>
+      <button type="button" class="btn btn--wine" data-go="form:question"><span class="btn__txt">Задать вопрос</span></button></div>`;
+    lastSearch = { q, found: groups.length > 0 };
+  }
+  let lastSearch = null;
+  let searchTrackT = null;
+  function trackSearch() {          // в статистику — только итоговый запрос, а не каждая набранная буква
+    clearTimeout(searchTrackT);
+    if (lastSearch && lastSearch.q && lastSearch.q !== trackSearch.sent) {
+      trackSearch.sent = lastSearch.q;
+      track(lastSearch.found ? 'search' : 'search_empty', lastSearch.q);
+    }
+  }
+  function searchHints() {
+    const tips = ['стипендия', 'пересдача', 'общежитие', '412', 'личный кабинет', 'староста', 'скидка'];
+    return `<p class="sub-h">Попробуй</p><div class="chips chips--hint">${tips.map((t) => `<button type="button" class="chip" data-q="${t}">${t}</button>`).join('')}</div>`;
+  }
+  S.search = () => `<div class="page">
+      ${pageHead({ rail: 'Поиск', title: 'Найти', acc: 'всё', script: 'в одном окне', ast: false,
+        lead: 'FAQ, документы, аудитории, анонсы, новости и контакты — пиши слово или номер аудитории.' })}
+      <div class="search search--big">
+        <span class="search__ico">${I.search}</span>
+        <input type="search" id="sq" placeholder="Стипендия, пересдача, 412…" autocomplete="off" enterkeyhint="search">
+        <button type="button" class="search__x" id="sqx" aria-label="Очистить" hidden>×</button>
+      </div>
+      <div class="results" id="sres">${searchHints()}</div>
+    </div>`;
+  function setupSearchScreen() {
+    const q = $('#sq');
+    const x = $('#sqx');
+    let t = null;
+    const go = () => { x.hidden = !q.value; current().arg = q.value; runSearch(q.value);
+      clearTimeout(searchTrackT); searchTrackT = setTimeout(trackSearch, 2500); };
+    q.addEventListener('input', () => { clearTimeout(t); t = setTimeout(go, 160); });
+    q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { q.blur(); go(); setTimeout(trackSearch, 300); } });
+    q.addEventListener('blur', () => setTimeout(trackSearch, 300));
+    x.addEventListener('click', () => { q.value = ''; go(); q.focus(); });
+    $('#sres').addEventListener('click', (e) => {
+      if (e.target.closest('.res')) trackSearch();
+      const c = e.target.closest('[data-q]');
+      if (c) { q.value = c.dataset.q; go(); return; }
+      const r = e.target.closest('[data-room]');
+      if (r) { pendingRoom = r.dataset.room; nav('map'); }
+    });
+    if (current().arg) { q.value = current().arg; go(); } else setTimeout(() => q.focus(), 350);
+  }
+
+  /* ---------------- Пульт руководства (код грузится только у админов) ---------------- */
+
+  S.admin = () => `<div class="page page--admin"><div id="adminRoot"><div class="empty">${I.panel}<p>Открываю Пульт…</p></div></div></div>`;
+  let adminLoaded = null;
+  function setupAdmin() {
+    if (!isAdmin()) {
+      dataReady.then(() => {
+        if (current().name !== 'admin') return;
+        if (!isAdmin()) { $('#adminRoot').innerHTML = `<div class="empty">${I.panel}<p>Пульт доступен только руководству ССт НАБ.</p></div>`; return; }
+        setupAdmin();
+      });
+      return;
+    }
+    if (!adminLoaded) {
+      adminLoaded = new Promise((res, rej) => {
+        const sc = document.createElement('script');
+        sc.src = 'admin.js?v=' + (window.APP_VER || '3');
+        sc.onload = res; sc.onerror = rej;
+        document.head.appendChild(sc);
+      });
+    }
+    adminLoaded.then(() => window.NAB_ADMIN && window.NAB_ADMIN.mount($('#adminRoot'), NAB))
+      .catch(() => { $('#adminRoot').innerHTML = '<div class="empty"><p>Не удалось загрузить Пульт. Проверь интернет.</p></div>'; });
+  }
+
+  // Общие помощники — для Пульта (admin.js)
+  const NAB = { api, esc, toast, haptic, showApiError, busyBtn, nav, goBack, I, spark, plural, fmtDate, fmtShort, nl2br,
+    starRow, STATUS, reload: () => loadData(), data: () => D(), compress, initData, track };
+
+  /* ---------------- Меню: пункты зависят от роли ---------------- */
+  function renderMenu() {
+    const items = MENU.slice();
+    if (isAdmin()) items.splice(1, 0, ['admin', 'Пульт руководства', 'is-admin']);
+    $('#menuList').innerHTML = items.map(([r, t, cls], i) => {
+      const badge = r === 'my' && D().myUnread ? ` <b class="menu__dot">${D().myUnread}</b>` : (r === 'admin' && D().adminNew ? ` <b class="menu__dot">${D().adminNew}</b>` : '');
+      return `<li><button type="button" class="${cls || ''}" data-route="${r}" style="--i:${i}"><span class="menu__num">${pad2(i + 1)}</span><span class="menu__t">${esc(t)}${badge}</span></button></li>`;
+    }).join('');
+  }
+
 
   /* ---------------- Роутер ---------------- */
 
@@ -947,7 +1471,15 @@
     if (r.name === 'home') return goHome();
     if (r.name === 'family') return goFamily();
     if (r.name === 'faqpage') { r.name = 'faq'; r.page = parseInt(r.arg, 10) || 1; r.arg = ''; }
+    if (r.name === 'doc' && r.arg.includes(':')) { const [id, pg] = r.arg.split(':'); r.arg = id; r.page = parseInt(pg, 10) || 1; }
+    if (r.name === 'events' && r.arg) { pendingEvent = r.arg; r.arg = ''; }
+    const c = current();
+    if (c.name === r.name && (c.name === 'map' || (c.arg || '') === (r.arg || '')) && !r.page) {   // уже здесь — просто наверх
+      window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
+      return;
+    }
     remember();
+    if (c.name === 'ok') stack.pop();       // экран «Принято!» в истории не держим
     stack.push(r);
     await transition('fwd');
   }
@@ -983,24 +1515,24 @@
   function scrollToEl(sel, instant) {
     const el = $(sel);
     if (!el) return;
-    const extra = sel === '#family' ? window.innerHeight * 0.95 : 0;
+    const extra = sel === '#family' ? -(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top-h')) || 56) : 0;
     window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + extra, behavior: instant || REDUCED ? 'auto' : 'smooth' });
   }
 
-  const curtain = $('#curtain');
+  // Переход между экранами: короткое затухание содержимого и плавное появление нового.
+  // Без шторок и полос сверху — шапка и нижняя панель остаются на месте.
+  let transId = 0;
   async function transition(dir) {
+    const my = ++transId;
     busy = true;
     if (REDUCED || !booted) { paint(); busy = false; return; }
-    curtain.className = 'curtain' + (dir === 'back' ? ' back' : '');
-    void curtain.offsetWidth;
-    curtain.classList.add('cover');
-    await wait(360);
+    view.classList.add('leave');
+    await wait(110);
+    if (my !== transId) return;
     paint();
-    curtain.classList.remove('cover');
-    curtain.classList.add('uncover');
+    view.dataset.dir = dir;
+    view.classList.remove('leave');
     busy = false;
-    await wait(440);
-    curtain.className = 'curtain';
   }
 
   // Аппаратная «назад» на Android: держим одну запись в истории и возвращаем её.
@@ -1053,6 +1585,17 @@
     if (c.name === 'doc' && DOCS[c.arg]) setupReader(DOCS[c.arg].pages, false, `assets/docs/${DOCS[c.arg].slug}/`);
     if (c.name === 'form') wireForm(c.arg);
     if (c.name === 'map') setupMap();
+    if (c.name === 'my') setupMy();
+    if (c.name === 'events' && pendingEvent) {
+      const el = $(`[data-ev="${pendingEvent}"]`);
+      pendingEvent = '';
+      if (el) setTimeout(() => { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); }, 60);
+    }
+    if (c.name === 'search') setupSearchScreen();
+    if (c.name === 'admin') setupAdmin();
+    track('screen', c.name === 'form' ? 'form:' + c.arg : c.name);
+    requestAnimationFrame(measure);
+    setTimeout(measure, 1200);
     if (c.name === 'ok') burst();
 
     fx.push(globalFx);
@@ -1071,7 +1614,7 @@
   /* ---------------- Заголовки не должны вылезать за край ---------------- */
   // Широкий гротеск (TD Mars / Unbounded) не переносит длинные слова —
   // уменьшаем кегль, пока самое длинное слово не влезет в строку.
-  const FIT = '.page__title,.hero__title,.sec__title,.fam__title,.cta__title,.fcard__title,.ok__title,.note-card__t';
+  const FIT = '.page__title,.hero__title,.sec__title,.fam__title,.cta__title,.fcard__title,.ok__title,.note-card__t,.chant__l,.adm-title,.stk__t';
   function fitTitles(root = view) {
     $$(FIT, root).forEach((el) => {
       el.style.fontSize = '';
@@ -1079,12 +1622,18 @@
       if (!avail) return;
       let fs = parseFloat(getComputedStyle(el).fontSize);
       const words = $$('.w', el);
-      const widest = () => (words.length ? Math.max(...words.map((w) => w.scrollWidth)) : el.scrollWidth);
+      const widest = () => Math.max(el.scrollWidth - (el.scrollWidth > el.clientWidth ? 0 : el.scrollWidth), ...(words.length ? words.map((w) => w.scrollWidth) : [el.scrollWidth]), ...$$('.noSplit', el).map((w) => w.scrollWidth));
       let guard = 40;
-      while (widest() > avail && fs > 15 && guard--) {
+      const minFs = el.classList.contains('stk__t') ? 9 : 15;
+      while (widest() > avail && fs > minFs && guard--) {
         fs -= 1.5;
         el.style.fontSize = `${fs}px`;
       }
+    });
+    $$('.badge__ava > span', root).forEach((sp) => {     // инициалы в квадрате: широкие буквы (ММ, ЖШ) уменьшаем
+      const box = sp.parentNode; box.style.fontSize = '';
+      let fs = parseFloat(getComputedStyle(box).fontSize), guard = 20;
+      while (sp.offsetWidth > box.clientWidth - 12 && fs > 12 && guard--) { fs -= 1; box.style.fontSize = `${fs}px`; }
     });
   }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitTitles());
@@ -1101,26 +1650,26 @@
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
     if (deferReveal) return;
-    targets.forEach((el) => { if (el.id !== 'famTitle' && !el.closest('#chant .chant__l')) io.observe(el); });
+    targets.forEach((el) => { if (!el.closest('#chant .chant__l')) io.observe(el); });
   }
 
   function releaseReveal() {
     deferReveal = false;
     if (!io) return;
     $$('.rv,.rv-l,.rv-clip,.rv-pop,.stk-wrap,[data-split],.fcard,.foot,.hero__script,.sec,.manifesto', view)
-      .forEach((el) => { if (el.id !== 'famTitle' && !el.closest('#chant .chant__l')) io.observe(el); });
+      .forEach((el) => { if (!el.closest('#chant .chant__l')) io.observe(el); });
   }
 
   /* ---------------- Эффекты скролла ---------------- */
 
-  let lastY = 0, vel = 0, ticking = false;
+  let lastY = 0, ticking = false, maxScroll = 1;
+  const measure = () => { maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight); };
   function onScroll() {
     if (ticking) return;
     ticking = true;
     requestAnimationFrame(() => {
       ticking = false;
       const y = window.scrollY;
-      vel = lerp(vel, y - lastY, 0.35);
       const dy = y - lastY;
       lastY = y;
       const vh = window.innerHeight;
@@ -1128,13 +1677,12 @@
     });
   }
   window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll);
+  window.addEventListener('resize', () => { measure(); onScroll(); });
 
   const progressEl = $('#progress');
   const topEl = $('#top');
   function globalFx(y, vh, dy) {
-    const max = document.documentElement.scrollHeight - vh;
-    progressEl.style.transform = `scaleX(${max > 0 ? clamp(y / max) : 0})`;
+    progressEl.style.transform = `scaleX(${clamp(y / maxScroll)})`;
     if (y < 80 || dy < -4) topEl.classList.remove('hide');
     else if (dy > 6) topEl.classList.add('hide');
   }
@@ -1159,84 +1707,38 @@
 
   function setupHome() {
     setupQuest();
+    fillHome();
     const chant = $('#chant');
-    const gallery = $('#gallery');
     if (chant && 'IntersectionObserver' in window && !REDUCED) {
       const cio = new IntersectionObserver((es) => es.forEach((e) => {
         if (!e.isIntersecting) return;
         chant.classList.add('go');
         $$('[data-split]', chant).forEach((el) => el.classList.add('in'));
-        setTimeout(() => haptic('heavy'), 2300);
+        setTimeout(() => haptic('heavy'), 1000);
         cio.disconnect();
       }), { threshold: 0.45 });
       cio.observe(chant);
     } else if (chant) { chant.classList.add('go'); }
-    if (gallery) {
-      const tiltGallery = () => {
-        const mid = window.innerWidth / 2;
-        $$('.gph', gallery).forEach((f) => {
-          const r = f.getBoundingClientRect();
-          const k = clamp(((r.left + r.width / 2) - mid) / window.innerWidth, -1, 1);
-          f.style.setProperty('--k', k.toFixed(3));
-        });
-      };
-      gallery.addEventListener('scroll', () => requestAnimationFrame(tiltGallery), { passive: true });
-      tiltGallery();
-    }
-
-    const heroAst = $('#heroAst');
-    const heroPhoto = $('#heroPhoto');
-    const tracks = $$('.mq__skew', view);
-    const fam = $('#family');
-    const sticky = $('#famSticky');
-    const famTitle = $('#famTitle');
+    // манифест загорается волной, когда доходит до экрана
     const mf = $('#mf');
-    const words = $$('.mf__w', mf);
-    const cards = $$('.note-card', view);
+    if (mf && 'IntersectionObserver' in window && !REDUCED) {
+      const mio = new IntersectionObserver((es) => es.forEach((e) => {
+        if (!e.isIntersecting) return;
+        $$('.mf__w', mf).forEach((w) => w.classList.add('lit'));
+        mio.disconnect();
+      }), { threshold: 0.2 });
+      mio.observe(mf);
+    } else if (mf) { $$('.mf__w', mf).forEach((w) => w.classList.add('lit')); }
+    watchAnims();
+  }
 
-    fx.push((y, vh) => {
-      if (y < vh * 1.3) {
-        heroAst.style.transform = `translateY(${y * 0.35}px) rotate(${y * 0.12}deg)`;
-        heroPhoto.style.transform = `translateY(${y * -0.12}px) scale(${1 + y * 0.0002})`;
-      }
-      const sk = clamp(vel * 0.35, -10, 10);
-      tracks.forEach((t) => { t.style.transform = `skewX(${-sk}deg)`; });
-
-      // «Больше, чем семья»: фото раскрывается и оживает в цвете
-      const r = fam.getBoundingClientRect();
-      if (r.top < vh && r.bottom > 0) {
-        const p = clamp(-r.top / (r.height - vh));
-        const open = smooth(0, 0.42, p);
-        sticky.style.setProperty('--ci', `${lerp(24, 0, open)}%`);
-        sticky.style.setProperty('--cx', `${lerp(9, 0, open)}%`);
-        sticky.style.setProperty('--cr', `${lerp(30, 0, open)}px`);
-        sticky.style.setProperty('--ps', lerp(1.18, 1.02, p).toFixed(3));
-        sticky.style.setProperty('--py', `${lerp(0, -3, p)}%`);
-        sticky.style.setProperty('--co', smooth(0.5, 0.8, p).toFixed(3));
-        sticky.style.setProperty('--so', lerp(0.45, 1, smooth(0.2, 0.5, p)).toFixed(3));
-        sticky.style.setProperty('--t1', smooth(0.28, 0.4, p).toFixed(3));
-        sticky.style.setProperty('--t2', smooth(0.34, 0.55, p).toFixed(3));
-        sticky.style.setProperty('--t3', smooth(0.5, 0.72, p).toFixed(3));
-        famTitle.classList.toggle('in', p > 0.32);
-      }
-
-      // манифест: слова загораются по мере чтения
-      const mr = mf.getBoundingClientRect();
-      if (mr.top < vh && mr.bottom > 0) {
-        const p = clamp((vh * 0.82 - mr.top) / (mr.height + vh * 0.1));
-        const lit = Math.round(p * words.length);
-        words.forEach((w, i) => w.classList.toggle('lit', i < lit));
-      }
-
-      // стопка карточек: предыдущая уходит вглубь
-      for (let i = 0; i < cards.length - 1; i++) {
-        const a = cards[i].getBoundingClientRect();
-        const b = cards[i + 1].getBoundingClientRect();
-        const k = clamp(1 - (b.top - a.top) / Math.max(a.height, 1));
-        cards[i].style.transform = `scale(${1 - k * 0.07})`;
-        cards[i].style.filter = `brightness(${1 - k * 0.28})`;
-      }
-    });
+  // бесконечные анимации (бегущие строки, звёздочка) работают только на экране
+  let animIo = null;
+  function watchAnims() {
+    if (animIo) animIo.disconnect();
+    if (!('IntersectionObserver' in window)) return;
+    animIo = new IntersectionObserver((es) => es.forEach((e) => e.target.classList.toggle('off', !e.isIntersecting)), { rootMargin: '60px 0px' });
+    $$('[data-anim]', view).forEach((el) => { el.classList.add('off'); animIo.observe(el); });
   }
 
   /* ---------------- Читалка ---------------- */
@@ -1423,47 +1925,22 @@
       el.appendChild(rp);
       setTimeout(() => rp.remove(), 750);
     }
-    if (el.classList.contains('stk')) tilt(el, e);
   }, { passive: true });
 
-  function tilt(el, e) {
-    if (REDUCED) return;
-    const r = el.getBoundingClientRect();
-    const nx = ((e.clientX - r.left) / r.width - 0.5) * 2;
-    const ny = ((e.clientY - r.top) / r.height - 0.5) * 2;
-    el.style.setProperty('--tx', `${nx * 7}deg`);
-    el.style.setProperty('--ty', `${-ny * 7}deg`);
-  }
-  document.addEventListener('pointermove', (e) => { if (pressed && pressed.classList.contains('stk')) tilt(pressed, e); }, { passive: true });
   const release = () => {
     if (!pressed) return;
     const el = pressed;
     pressed = null;
     el.classList.remove('press');
-    el.style.removeProperty('--tx');
-    el.style.removeProperty('--ty');
   };
   document.addEventListener('pointerup', release, { passive: true });
   document.addEventListener('pointercancel', release, { passive: true });
 
-  // «магнит» для наклеек на компьютере
-  if (window.matchMedia && matchMedia('(hover: hover)').matches && !REDUCED) {
-    document.addEventListener('mousemove', (e) => {
-      const el = e.target.closest('.stk');
-      $$('.stk.mag', view).forEach((s) => { if (s !== el) { s.classList.remove('mag'); s.style.removeProperty('--px'); s.style.removeProperty('--py'); } });
-      if (!el || el.classList.contains('press')) return;
-      const r = el.getBoundingClientRect();
-      el.classList.add('mag');
-      el.style.setProperty('--px', `${((e.clientX - r.left) / r.width - 0.5) * 8}px`);
-      el.style.setProperty('--py', `${((e.clientY - r.top) / r.height - 0.5) * 8}px`);
-    });
-  }
-
   // короткая «заливка» перед действием — чтобы нажатие было видно
-  function hit(el, fn, delay = 190) {
+  function hit(el, fn, delay = 70) {
     el.classList.add('hit');
     haptic(el.classList.contains('stk--sos') ? 'heavy' : 'medium');
-    setTimeout(() => { fn(); setTimeout(() => el.classList.remove('hit'), 450); }, REDUCED ? 0 : delay);
+    setTimeout(() => { fn(); setTimeout(() => el.classList.remove('hit'), 350); }, REDUCED ? 0 : Math.min(delay, 90));
   }
 
   document.addEventListener('click', (e) => {
@@ -1509,8 +1986,7 @@
 
   /* ---------------- Нижняя панель и меню ---------------- */
 
-  $('#menuList').innerHTML = MENU.map(([r, t, cls], i) =>
-    `<li><button type="button" class="${cls || ''}" data-route="${r}" style="--i:${i}"><span class="menu__num">${pad2(i + 1)}</span><span class="menu__t">${esc(t)}</span></button></li>`).join('');
+  renderMenu();
 
   function openMenu() {
     document.body.classList.add('menu-open', 'lock');
@@ -1566,6 +2042,7 @@
   }
 
   async function showStep() {
+    const myStep = tourStep;
     const s = TOUR[tourStep];
     const el = $(s.sel);
     if (!el) { endTour(); return; }
@@ -1576,8 +2053,9 @@
       const target = window.scrollY + r0.top - Math.max(80, (window.innerHeight - r0.height) / 2 - 60);
       window.scrollTo({ top: Math.max(0, target), behavior: REDUCED ? 'auto' : 'smooth' });
       await wait(REDUCED ? 30 : 520);
-      document.body.classList.add('lock');
+      if (!tourOn || tourStep !== myStep) return;   // тур закрыли или уже перешли дальше
     }
+    document.body.classList.add('lock');
     const r = el.getBoundingClientRect();
     const pad = 8;
     const hole = $('#tourHole');
@@ -1652,7 +2130,9 @@
         haptic('success');
       });
       const draw = () => {
-        grid.innerHTML = photos.map((b, i) => `<div class="ph"><img src="${URL.createObjectURL(b)}" alt=""><button type="button" data-i="${i}" aria-label="Удалить">×</button></div>`).join('');
+        previewUrls.forEach((u) => URL.revokeObjectURL(u));
+        previewUrls = photos.map((b) => URL.createObjectURL(b));
+        grid.innerHTML = photos.map((b, i) => `<div class="ph"><img src="${previewUrls[i]}" alt=""><button type="button" data-i="${i}" aria-label="Удалить">×</button></div>`).join('');
         $$('button', grid).forEach((btn) => btn.addEventListener('click', () => { photos.splice(Number(btn.dataset.i), 1); draw(); haptic('light'); }));
         add.style.display = photos.length >= 5 ? 'none' : '';
       };
@@ -1682,19 +2162,27 @@
 
       submit.classList.add('hit', 'busy');
       haptic('medium');
+      const formEntry = current();
       try {
         await api('/report', fd, true);
         haptic('success');
-        stack.pop();                 // форму убираем из стека — «назад» ведёт туда, откуда пришли
-        stack.push({ name: 'ok', arg: kind });
-        await transition('fwd');
+        if (current() === formEntry && !busy) {
+          stack.pop();               // форму убираем из стека — «назад» ведёт туда, откуда пришли
+          stack.push({ name: 'ok', arg: kind });
+          await transition('fwd');
+        } else {
+          const at = stack.indexOf(formEntry);       // отправленную форму из истории убираем
+          if (at > 0) stack.splice(at, 1);
+          toast('Обращение отправлено ✦');   // человек уже на другом экране — не выдёргиваем его
+        }
       } catch (e) {
-        showApiError(e);
-        submit.classList.remove('hit', 'busy');
+        if (submit.isConnected) { showApiError(e); submit.classList.remove('hit', 'busy'); }
+        else { haptic('error'); toast(`Обращение не отправлено: ${e.message}`, 'err'); }
       }
     });
   }
 
+  let previewUrls = [];
   function compress(file, max = 1600, quality = 0.82) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
@@ -1735,16 +2223,18 @@
     // 1) deep-link бота: t.me/sprosinab_bot?startapp=faq  или  …/#/faq
     const sp = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
     const hash = (location.hash || '').replace(/^#\/?/, '');
-    const raw = String(sp || hash).toLowerCase().replace(/[^a-z_:/-]/g, '');
+    const raw = String(sp || hash).toLowerCase().replace(/[^a-z0-9_:/-]/g, '');
     const alias = { question: 'form:question', questions: 'form:question', initiative: 'form:initiative', repair: 'form:repair',
-      panic: 'form:panic', sos: 'form:panic', npb: 'npb', faq: 'faq', groups: 'groups', contacts: 'contacts', family: 'family', map: 'map' };
-    const key = raw.replace('/', ':').replace(/^form_/, '');
+      panic: 'form:panic', sos: 'form:panic', npb: 'npb', faq: 'faq', groups: 'groups', contacts: 'contacts', family: 'family', map: 'map',
+      my: 'my', events: 'events', polls: 'polls', search: 'search', admin: 'admin' };
+    const key = raw.replace('/', ':').replace(/^form_/, '').replace(/^news_/, 'news:');
+    if (/^news:\d+$/.test(key)) return key;
     return alias[key] || (FORMS[key.split(':')[1]] ? key : '');
   }
 
   function boot() {
     const route = startRoute();
-    const skipIntro = REDUCED || store.sget('nab_intro') === '1' || (route && route !== 'family');
+    const skipIntro = REDUCED || store.get('nab_intro') === '1' || store.sget('nab_intro') === '1' || (route && route !== 'family');
     if (route && route !== 'family') stack.push(parse(route));
 
     if (skipIntro) {
@@ -1759,8 +2249,9 @@
     deferReveal = true;
     paint();
     store.sset('nab_intro', '1');
+    store.set('nab_intro', '1');
     const cnt = $('#introCount'), bar = $('#introBar');
-    const t0 = performance.now(), D = 1500;
+    const t0 = performance.now(), D = 650;
     const step = (t) => {
       const p = clamp((t - t0) / D);
       const e = 1 - Math.pow(1 - p, 3);
@@ -1775,9 +2266,9 @@
             releaseReveal();
             booted = true;
             if (route === 'family') goFamily(); else maybeTour();
-          }, 380);
-          setTimeout(() => $('#intro') && $('#intro').remove(), 1000);
-        }, 250);
+          }, 250);
+          setTimeout(() => $('#intro') && $('#intro').remove(), 600);
+        }, 80);
       }
     };
     requestAnimationFrame(step);

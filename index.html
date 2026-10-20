@@ -6,11 +6,10 @@
 <meta name="theme-color" content="#112622">
 <meta name="format-detection" content="telephone=no">
 <title>Спроси ССт НАБ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=Comfortaa:wght@400;500;600;700&family=Great+Vibes&display=swap">
-<link rel="preload" as="image" href="assets/brand/logo-nab.png">
-<link rel="preload" as="image" href="assets/brand/logo-label.png">
+<link rel="preload" as="font" type="font/woff" href="assets/fonts/td-mars.woff" crossorigin>
+<link rel="preload" as="font" type="font/woff" href="assets/fonts/caviar-dreams.woff" crossorigin>
+<link rel="preload" as="image" href="assets/brand/logo-nab.png" crossorigin="anonymous">
+<link rel="preload" as="image" href="assets/brand/logo-label.png" crossorigin="anonymous">
 <link rel="stylesheet" href="styles.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -34,9 +33,6 @@
 </div>
 
 <!-- ============ Шторка перехода между экранами ============ -->
-<div class="curtain" id="curtain" aria-hidden="true">
-  <i class="ast ast--spin"></i>
-</div>
 
 <!-- ============ Верх ============ -->
 <div class="progress" aria-hidden="true"><i id="progress"></i></div>
@@ -94,6 +90,7 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+<script>window.APP_VER = "3.0";</script>
 <script src="app.js"></script>
 </body>
 </html>
