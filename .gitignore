@@ -3,3 +3,7 @@ Thumbs.db
 .idea/
 .vscode/
 node_modules/
+
+# фирменные шрифты NAB Label — лицензия не позволяет выкладывать их в открытый доступ,
+# на сервер они кладутся отдельно (см. README)
+assets/fonts/
