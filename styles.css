@@ -1056,27 +1056,3 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; transition-delay: 0s !important; }
 }
-
-/* A shorter home with direct access to everyday tasks. */
-.quick { position: relative; padding: 32px var(--gut) 12px; background: var(--night) var(--grain); }
-.quick__head { margin-bottom: 18px; }
-.quick__head h2 { font-size: clamp(23px, 7.5vw, 34px); margin: 14px 0 0; }
-.quick__list { display: grid; gap: 10px; }
-.quick__item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 20px; border: 1px solid rgba(182,236,189,.25); border-radius: 14px; background: var(--mint) var(--paper); color: var(--ink); text-align: left; transition: transform .2s var(--ease); }
-.quick__item--wine { background: var(--wine) var(--grain); color: var(--cream); }
-.quick__item--sand { background: var(--sand) var(--paper); }
-.quick__item strong { display: block; font-family: var(--f-body); font-size: clamp(18px, 5vw, 22px); line-height: 1.3; }
-.quick__item small { display: block; margin-top: 7px; font-size: 13px; line-height: 1.45; }
-.quick__item > span:last-child { font-family: system-ui, sans-serif; font-size: 28px; flex-shrink: 0; }
-.quick__item:active { transform: scale(.98); }
-.home-news:has(#homeNews:empty) { display: none; }
-.home-guide { margin: 14px var(--gut) 32px; border: 1px solid rgba(182,236,189,.3); border-radius: 14px; overflow: clip; background: var(--pine); }
-.home-guide summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 88px; padding: 20px; cursor: pointer; list-style: none; }
-.home-guide summary::-webkit-details-marker { display: none; }
-.home-guide summary strong { display: block; font-size: 20px; margin-top: 9px; line-height: 1.35; }
-.home-guide__plus { font: 30px/1 system-ui, sans-serif; color: var(--mint); }
-.home-guide[open] .home-guide__plus { transform: rotate(45deg); }
-.home-guide .sec { padding: 20px 14px 30px; }
-.home-guide .sec__head { display: none; }
-.home-guide summary:focus-visible { outline: 2px solid var(--teal); outline-offset: -5px; }
-@media (min-width: 700px) { .quick__list { grid-template-columns: repeat(3, minmax(0, 1fr)); } .quick__item { padding: 22px 18px; } }

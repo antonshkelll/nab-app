@@ -381,16 +381,7 @@
       </button>
       <div class="hero__cta rv" style="--d:.8s">
         <button type="button" class="btn btn--wine btn--block" data-go="form:question"><span class="btn__txt">Задать вопрос</span> <span class="arr">${I.arr}</span></button>
-        <div class="scroll-hint"><i></i> вопросы · поломки · мои обращения</div>
-      </div>
-    </section>
-
-    <section class="quick" aria-labelledby="quickTitle">
-      <div class="quick__head"><span class="kicker kicker--ghost">Всегда под рукой</span><h2 id="quickTitle" class="disp">С чего начнём?</h2></div>
-      <div class="quick__list">
-        <button type="button" class="quick__item quick__item--wine" data-go="form:question"><span><strong>Задать вопрос</strong><small>Ответ придёт в чат с ботом</small></span><span aria-hidden="true">↗</span></button>
-        <button type="button" class="quick__item" data-go="form:repair"><span><strong>Сообщить о поломке</strong><small>Фото и место — передадим заявку</small></span><span aria-hidden="true">↗</span></button>
-        <button type="button" class="quick__item quick__item--sand" data-go="my"><span><strong>Мои обращения</strong><small>Статусы, ответы и переписка</small></span><span aria-hidden="true">↗</span></button>
+        <div class="scroll-hint"><i></i> листай вниз — там много всего</div>
       </div>
     </section>
 
@@ -408,10 +399,50 @@
 
     <section class="sec sec--night live" id="homeLive" hidden></section>
 
-    <section class="home-news sec sec--night" aria-label="Новости"><div class="fcards" id="homeNews"></div></section>
+    <section class="sec sec--night">
+      <div class="sec__head">
+        <span class="kicker rv">${spark('', '--s:10px')} Главное</span>
+        <h2 class="disp sec__title split-mask" data-split style="margin-top:12px">Что нового</h2>
+      </div>
+      <div class="fcards">
+        <div class="fcards" id="homeNews"></div>
+        <article class="fcard rv">
+          <div class="fcard__photo"><img src="assets/brand/dance.webp" alt="Команда Студсовета НАБ танцует у корпуса" loading="lazy" decoding="async"></div>
+          <div class="fcard__pills"><span class="kicker kicker--ink">Главное</span>${spark('spark--tw', '--s:18px')}</div>
+          <h3 class="disp fcard__title">Бот стал <em>приложе&shy;нием</em></h3>
+          <p class="fcard__text">Документы, FAQ, вопросы руководству и заявки о поломках — теперь в одном красивом окне, прямо в Telegram.</p>
+          <div class="chips">
+            <button type="button" class="chip" data-go="npb">НПБ <b>+</b></button>
+            <button type="button" class="chip" data-go="faq">FAQ <b>+</b></button>
+            <button type="button" class="chip" data-go="form:repair">Поломки <b>+</b></button>
+            <button type="button" class="chip" data-go="contacts">Контакты <b>+</b></button>
+            <button type="button" class="chip" data-go="map">Карта корпуса <b>+</b></button>
+          </div>
+          <div class="stage" id="quest">${questHTML()}</div>
+        </article>
 
-    <details class="home-guide">
-      <summary><span><span class="kicker">Как это работает</span><strong>Три шага — и готово</strong></span><span class="home-guide__plus" aria-hidden="true">+</span></summary>
+        <article class="fcard fcard--mint rv">
+          <div class="fcard__pills"><span class="kicker kicker--wine">${FAQ_PAGES} страниц</span>${spark('spark--tw', '--s:16px;--d:-1s')}</div>
+          <h3 class="disp fcard__title">Ответы на <em>всё</em></h3>
+          <p class="fcard__text">Сессия, пересдачи, общежитие, стипендия, личный кабинет — собрали самые частые вопросы в одну листалку.</p>
+          <div class="fan">
+            <img src="${faqThumb(1)}" alt="" style="--i:0;--x:-70px;--r:-12deg" loading="lazy" decoding="async">
+            <img src="${faqThumb(14)}" alt="" style="--i:2;--x:70px;--r:11deg" loading="lazy" decoding="async">
+            <img src="${faqThumb(3)}" alt="" style="--i:1;--x:0px;--r:-1deg" loading="lazy" decoding="async">
+          </div>
+          <button type="button" class="btn btn--block" data-go="faq"><span class="btn__txt">Листать FAQ</span> <span class="arr">${I.arr}</span></button>
+        </article>
+
+        <article class="fcard fcard--sand rv">
+          <div class="fcard__pills"><span class="kicker kicker--wine">Сломалось?</span>${spark('spark--tw', '--s:16px;--d:-.5s')}</div>
+          <h3 class="disp fcard__title">Сфоткай — <em>починим</em></h3>
+          <p class="fcard__text">Розетка, дверь, батарея, проектор. Пришли фото и место — передадим начальнику корпуса. Можно до 5 фото.</p>
+          <div class="gap"></div>
+          <button type="button" class="btn btn--wine btn--block" data-go="form:repair"><span class="btn__txt">Сообщить о поломке</span> <span class="arr">${I.arr}</span></button>
+        </article>
+      </div>
+    </section>
+
     <section class="sec sec--pine sec--stack">
       ${swirl('right:-60px;top:10px;width:260px;transform:scaleX(-1)')}
       <div class="sec__head">
@@ -431,8 +462,6 @@
           <p>Обращение сразу попадает к руководству ССт НАБ. На вопросы ответим прямо в чат с ботом.</p><span class="scr">мы рядом</span></article>
       </div>
     </section>
-
-    </details>
 
     <section class="fam" id="family">
       <div class="fam__card rv">
@@ -467,6 +496,20 @@
       </div>
       <div class="gap"></div><div class="gap"></div>
       <button type="button" class="btn btn--block rv" data-link="https://t.me/NABLABFU"><span class="btn__txt">Стать частью семьи</span> <span class="arr">${I.arr}</span></button>
+    </section>
+
+    <section class="chant" id="chant">
+      <div class="chant__photo">
+        <img class="bw" src="assets/brand/scene-bw.webp" alt="" loading="lazy" decoding="async">
+        <img class="col" src="assets/brand/scene.webp" alt="Студсовет НАБ на сцене" loading="lazy" decoding="async">
+      </div>
+      <div class="chant__in">
+        <span class="kicker kicker--wine rv">${I.mega.replace('width="22" height="22"', 'width="13" height="13"')} Кричалка ССт НАБ</span>
+        <p class="disp chant__l split-mask" data-split>Они были теми,</p>
+        <p class="disp chant__l split-mask" data-split style="--d0:260ms">в ком вечно нуждались —</p>
+        <p class="chant__nab"><span class="cw"><b style="--n:0">Н</b>алоги,</span> <span class="cw"><b style="--n:1">А</b>удит</span> <span class="cw">и&nbsp;<b style="--n:2">Б</b>изнес-анализ</span></p>
+        <div class="chant__stamp" aria-hidden="true">НАБ!</div>
+      </div>
     </section>
 
     <section class="sec sec--night gallery-sec">
