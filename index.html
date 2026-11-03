@@ -10,7 +10,7 @@
 <link rel="preload" as="font" type="font/woff" href="assets/fonts/caviar-dreams.woff" crossorigin>
 <link rel="preload" as="image" href="assets/brand/logo-nab.png" crossorigin="anonymous">
 <link rel="preload" as="image" href="assets/brand/logo-label.png" crossorigin="anonymous">
-<link rel="stylesheet" href="styles.css?v=20261103">
+<link rel="stylesheet" href="styles.css?v=20261103-3">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -48,7 +48,7 @@
 
 <!-- ============ Нижняя панель как у F&U ============ -->
 <nav class="dock" id="dock">
-  <button class="dock__burger" type="button" id="burger" aria-label="Меню">
+  <button class="dock__burger" type="button" id="burger" aria-label="Меню" aria-controls="menu" aria-expanded="false">
     <i></i><i></i><i></i>
   </button>
   <button class="dock__pill" type="button" id="pill" aria-label="Спроси ССт НАБ — главная">
@@ -65,7 +65,7 @@
   <div class="menu__grid" aria-hidden="true"></div>
   <div class="menu__head">
     <span class="menu__kicker">Меню</span>
-    <button class="menu__close" type="button" id="menuClose" aria-label="Закрыть меню">×</button>
+    <button class="menu__close" type="button" id="menuClose" aria-label="Закрыть меню"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
   </div>
   <ol class="menu__list" id="menuList"></ol>
   <div class="menu__foot">
@@ -91,6 +91,6 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>window.APP_VER = "3.0";</script>
-<script src="app.js?v=20261103-2"></script>
+<script src="app.js?v=20261103-3"></script>
 </body>
 </html>

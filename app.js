@@ -1991,15 +1991,22 @@
   function openMenu() {
     document.body.classList.add('menu-open', 'lock');
     $('#menu').setAttribute('aria-hidden', 'false');
+    $('#burger').setAttribute('aria-expanded', 'true');
+    $('#menuClose').focus({ preventScroll: true });
     if (tg) tg.BackButton.show();
     haptic('medium');
   }
   function closeMenu() {
     document.body.classList.remove('menu-open', 'lock');
     $('#menu').setAttribute('aria-hidden', 'true');
+    $('#burger').setAttribute('aria-expanded', 'false');
+    $('#burger').focus({ preventScroll: true });
     if (tg && stack.length === 1) tg.BackButton.hide();
   }
   $('#burger').addEventListener('click', () => (document.body.classList.contains('menu-open') ? closeMenu() : openMenu()));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('menu-open')) closeMenu();
+  });
   $('#menuClose').addEventListener('click', () => { haptic('light'); closeMenu(); });
   $('#menuList').addEventListener('click', (e) => {
     const b = e.target.closest('[data-route]');
