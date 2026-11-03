@@ -3,6 +3,8 @@
    Брендбук NAB Label (Информ 26-27): цвета, шрифты, логотип, фактуры.
    ========================================================================= */
 
+@font-face { font-family: 'Caviar Menu'; font-display: swap; font-weight: 400; src: url('assets/fonts/caviar-dreams-menu.woff') format('woff'); }
+
 /* ---- Фирменные шрифты из брендбука NAB Label (лежат в assets/fonts) ---- */
 @font-face { font-family: 'TD Mars'; font-display: swap; font-weight: 100 900; src: url('assets/fonts/td-mars.woff') format('woff'); }
 @font-face { font-family: 'Caviar Dreams'; font-display: swap; font-weight: 100 600; src: url('assets/fonts/caviar-dreams.woff') format('woff'); }
@@ -183,7 +185,7 @@ body.menu-open .menu { opacity: 1; transform: none; visibility: visible; transit
   transition: transform .4s var(--ease), color .2s; transition-delay: calc(var(--i) * 22ms + .05s); }
 body.menu-open .menu__list button { transform: none; }
 .menu__num { font-family: var(--f-display); font-weight: 800; font-size: 10px; color: var(--teal); min-width: 22px; }
-.menu__t { font-family: var(--f-display); font-weight: 900; font-size: clamp(18px, 5.4vw, 26px); text-transform: uppercase; line-height: 1.05; letter-spacing: -.01em; }
+.menu__t { font-family: 'Caviar Menu', var(--f-body); font-weight: 400; font-size: clamp(18px, 5.4vw, 26px); text-transform: uppercase; line-height: 1.05; letter-spacing: -.01em; }
 .menu__list button:active .menu__t { color: var(--mint); transform: translateX(8px); }
 .menu__t { display: inline-block; transition: transform .4s var(--ease), color .3s; }
 .menu__list .is-sos .menu__t { color: #d98aa3; }
@@ -268,7 +270,7 @@ body.menu-open .menu__list button { transform: none; }
 
 /* ---- Hero ---- */
 .hero { position: relative; min-height: calc(100vh - var(--top-h) - 10px); padding: 20px var(--gut) 30px; display: flex; flex-direction: column; overflow: hidden; }
-.hero__bgphoto { position: absolute; left: -10%; right: -10%; bottom: -4%; height: 62%; background: url(assets/brand/people-halftone-dark.webp) center 30% / cover no-repeat;
+.hero__bgphoto { position: absolute; left: -10%; right: -10%; bottom: -4%; height: 62%; background: url(assets/brand/meeting-freshmen.webp) center 30% / cover no-repeat;
   opacity: .34; -webkit-mask: linear-gradient(transparent, #000 40%, #000 70%, transparent); mask: linear-gradient(transparent, #000 40%, #000 70%, transparent); will-change: transform; }
 .hero__grid { position: absolute; inset: 0; background: var(--gridl); background-size: 44px 44px; -webkit-mask: radial-gradient(120% 70% at 50% 20%, #000, transparent); mask: radial-gradient(120% 70% at 50% 20%, #000, transparent); }
 .hero__ast { position: absolute; right: -40px; top: 40px; width: 210px; opacity: .92; will-change: transform; }
@@ -462,6 +464,8 @@ body.menu-open .menu__list button { transform: none; }
 .manifesto { position: relative; padding: 70px var(--gut) 50px; background: var(--ink) var(--grain); background-size: 180px; }
 .manifesto__lbl { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
 .mf { margin: 0; font-family: var(--f-body); font-weight: 700; font-size: clamp(22px, 6.6vw, 30px); line-height: 1.28; letter-spacing: -.01em; }
+.mf p { margin: 0 0 1em; }
+.mf p:last-child { margin-bottom: 0; }
 .mf__w { color: rgba(234, 251, 234, .14); transition: color .4s; transition-delay: calc(var(--w, 0) * 9ms); }
 .mf__w.lit { color: var(--cream); }
 .mf__w.acc.lit { color: var(--mint); }

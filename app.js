@@ -349,9 +349,9 @@
       return `<div class="mq ${cls}" data-anim><div class="mq__skew"><div class="mq__track"><div class="mq__item">${one}</div><div class="mq__item">${one}</div></div></div></div>`;
     };
 
-    const manifesto = 'Почему стоит пойти в ССт? Многие из нас задавались этим вопросом перед анкетой — и сомневались. А в итоге получили море эмоций, смеха и незабываемых моментов, опыт настоящих проектов, кучу новых знакомств и самое главное — *людей.* ССт — это место, которое навсегда запомнится счастливыми годами студенчества. Место, где можно учиться на ошибках и бесконечно пробовать новое. Место, где тебя *слышат,* и ты знаешь: с любой проблемой можно прийти к своим. Попробовать не страшно — страшно упустить свою возможность. Потому что это *семья.*';
+    const manifesto = 'Почему стоит пойти в ССт?\n\nМногие из нас задавались этим вопросом перед анкетой — и сомневались. А в итоге получили море эмоций, смеха и незабываемых моментов, опыт настоящих проектов, кучу новых знакомств и самое главное — *людей.*\n\nССт — это место, которое навсегда запомнится счастливыми годами студенчества. Место, где можно учиться на ошибках и бесконечно пробовать новое. Место, где тебя *слышат,* и ты знаешь: с любой проблемой можно прийти к своим.\n\nПопробовать не страшно — страшно упустить свою возможность. Потому что это *семья.*';
     let acc = false, wi = 0;
-    const mfHtml = manifesto.split(/\s+/).map((w) => {
+    const mfHtml = manifesto.split('\n\n').map((paragraph) => '<p>' + paragraph.split(/\s+/).map((w) => {
       const start = w.startsWith('*');
       if (start) acc = true;
       const clean = w.replace(/\*/g, '');
@@ -359,7 +359,7 @@
       if (w.endsWith('*') || (w.includes('*') && !start)) acc = false;
       if (start && w.slice(1).includes('*')) acc = false;
       return html;
-    }).join(' ');
+    }).join(' ') + '</p>').join('');
 
     return `
     <section class="hero" id="hero">
@@ -480,7 +480,7 @@
     <section class="manifesto" id="manifesto">
       ${swirl('left:-70px;bottom:40px;width:280px;opacity:.6', 1000)}
       <div class="manifesto__lbl rv"><span class="kicker kicker--wine">Манифест</span>${spark('spark--tw', '--s:14px;color:var(--mint)')}</div>
-      <p class="mf" id="mf">${mfHtml}</p>
+      <div class="mf" id="mf">${mfHtml}</div>
       <div class="scr mf-sign rv">Добро пожаловать домой.</div>
 
       <div class="pins">
@@ -519,8 +519,8 @@
         <span class="scr sec__sub rv" style="--d:.3s">листай →</span>
       </div>
       <div class="gallery" id="gallery">
-        ${[['stage', 'НАБ, вперёд!'], ['scene', 'наша сцена'], ['dance', 'в одном ритме'], ['selfie', 'за кулисами'], ['people', 'вся семья']]
-          .map(([f, c], i) => `<figure class="gph${f === 'scene' ? ' gph--tall' : ''}" style="--r:${[-3, 2.5, -2, 3, -1.5][i]}deg">${i % 2 ? '' : '<i class="tape"></i>'}<img src="assets/brand/${f}.webp" alt="" loading="lazy" decoding="async"><figcaption class="scr">${c}</figcaption></figure>`).join('')}
+        ${[['meeting-freshmen', 'собрание с первокурсниками'], ['stage', 'НАБ, вперёд!'], ['scene', 'наша сцена'], ['dance', 'в одном ритме'], ['selfie', 'за кулисами'], ['people', 'вся семья']]
+          .map(([f, c], i) => `<figure class="gph${f === 'scene' ? ' gph--tall' : ''}" style="--r:${[-3, 2.5, -2, 3, -1.5, 2][i]}deg">${i % 2 ? '' : '<i class="tape"></i>'}<img src="assets/brand/${f}.webp" alt="" loading="lazy" decoding="async"><figcaption class="scr">${c}</figcaption></figure>`).join('')}
       </div>
     </section>
 
