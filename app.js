@@ -519,7 +519,7 @@
         <span class="scr sec__sub rv" style="--d:.3s">листай →</span>
       </div>
       <div class="gallery" id="gallery">
-        ${[['meeting-freshmen', 'собрание с первокурсниками'], ['stage', 'НАБ, вперёд!'], ['scene', 'наша сцена'], ['dance', 'в одном ритме'], ['selfie', 'за кулисами'], ['people', 'вся семья']]
+        ${[['meeting-freshmen', 'собрание'], ['stage', 'НАБ, вперёд!'], ['scene', 'наша сцена'], ['dance', 'в одном ритме'], ['selfie', 'за кулисами'], ['people', 'вся семья']]
           .map(([f, c], i) => `<figure class="gph${f === 'scene' ? ' gph--tall' : ''}" style="--r:${[-3, 2.5, -2, 3, -1.5, 2][i]}deg">${i % 2 ? '' : '<i class="tape"></i>'}<img src="assets/brand/${f}.webp" alt="" loading="lazy" decoding="async"><figcaption class="scr">${c}</figcaption></figure>`).join('')}
       </div>
     </section>
