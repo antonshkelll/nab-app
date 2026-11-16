@@ -1,3 +1,7 @@
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/portfolio-dark.svg"><img src="assets/portfolio-light.svg" width="100%" alt="nab-app"></picture>
+
+[Профиль](https://github.com/antonshkelll) · [Портфолио](https://antonshkel.ru)
+
 # Спроси ССт НАБ: Telegram Mini App
 
 ![version](https://img.shields.io/badge/версия-3.0-62122C)
